@@ -51,7 +51,7 @@ INSTALLED_APPS = (
     'matricula.contrib.bills',
     'ckeditor',
     'paypal.standard.ipn',
-
+    'selenium',
     'django_ajax',
 )
 
