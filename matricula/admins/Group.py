@@ -17,10 +17,6 @@ from django.template.loader import get_template
 from django.template.context import Context
 
 
-from xhtml2pdf import pisa
-import io
-
-
 class ActionsGroup:
     '''
     classdocs

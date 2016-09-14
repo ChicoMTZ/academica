@@ -10,11 +10,11 @@
   <li class="list-group-item">
   	<div class="row">
   		<div class="col-md-8">
-  		<a href="{% url 'course' course.course.pk%}" >
+  		<a href="{% url 'course' course.course.pk%}" name="Curso">
   		<h3 class="list-group-item-heading text-center">{{course.course.name}}</h3></a>
   		<br>
     	<p class="list-group-item-text text-justify">{{course.course.content|truncatewords_html:60|safe}}</p>
-    	<a class= "btn btn-success" href="{% url 'course' course.course.pk%}" > {% trans 'Read more' %} </a>
+    	<a class= "btn btn-success" name="Read" href="{% url 'course' course.course.pk%}" > {% trans 'Read more' %} </a>
   		</div>
   
   		<div class="col-md-4">

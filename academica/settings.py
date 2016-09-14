@@ -51,8 +51,8 @@ INSTALLED_APPS = (
     'matricula.contrib.bills',
     'ckeditor',
     'paypal.standard.ipn',
-
     'django_ajax',
+    'selenium',
 )
 
 MIDDLEWARE_CLASSES = (

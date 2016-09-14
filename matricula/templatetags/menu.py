@@ -94,7 +94,7 @@ def print_menu_item(request, menues, is_list=False):
 
     for key, menu in items_menu:
         ref, ref_display = get_ref_and_ref_display(request, menu['obj'])
-        dev += '<li role="presentation" ><a class="btn btn-success" href="%s"> %s</a>' % (ref, ref_display)
+        dev += '<li role="presentation" ><a class="btn btn-success" name="List" href="%s"> %s</a>' % (ref, ref_display)
         if menu['children']:
             dev += '<ul class="nav nav-pills" >' + print_menu_item(request, menu['children'], True) + "</ul>"
         dev += '</li>'
@@ -114,5 +114,5 @@ def show_menu(context, user_auth):
     #menu li:hover > ul { display: block;}
 </style>
     """
-    dev = '<div id="menu"><ul class="nav nav-pills" >' + print_menu_item(context['request'], menues) + "</ul></div>"
+    dev = '<div id="menu"><ul class="nav nav-pills" name="List_Menu">' + print_menu_item(context['request'], menues) + "</ul></div>"
     return mark_safe(css + dev)

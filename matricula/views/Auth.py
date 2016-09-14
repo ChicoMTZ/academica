@@ -50,10 +50,9 @@ def create_user(request):
                           )
     else:
         form = StudentCreateForm()
-    if request.user.is_authenticated and not request.user.is_staff:
-        messages.info(request, 'Usted ya ha sido logeado, con un usuario que no tiene permiso para acceder a esta página')
+    if request.user.is_active and not request.user.is_staff:
+        messages.info(request, _('Your user have not permission to see this page'))
         return redirect(reverse('index'))
-
     return render(request, 'student_create.html', {'form': form})
 
 
@@ -210,7 +209,7 @@ class StudentEdit(UpdateView):
 def login_user(request):
 
     if not request.user.is_anonymous and not request.user.is_staff:
-        messages.info(request, 'Usted ya ha sido logeado, con un usuario que no tiene permiso para acceder a esta página')
+        messages.info(request, _('Your user have not permission to see this page'))
         return redirect(reverse('index'))
 
     else:
