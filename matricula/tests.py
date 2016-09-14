@@ -2,9 +2,9 @@
 
 from django.test import TestCase, RequestFactory
 from matricula.models import Period, Category, Course, Student, Group
-
-from datetime import  timedelta
+from datetime import timedelta
 from django.utils import timezone as datetime
+
 
 class InsertTestCase(TestCase):
     def setUp(self):
@@ -93,10 +93,3 @@ class InsertTestCase(TestCase):
                                                   email='jacob3@…',
                                                   password='password'),
                       ]
-
-
-    def test_demo(self):
-        self.assertEqual(True, False)
-
-    def test_demo2(self):
-        self.assertEqual(True, True)
