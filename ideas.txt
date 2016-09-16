@@ -1,0 +1,6 @@
+Compatibilidad:
+
+El proyecto corre en python 3.4 con a penas estos cambios:
+
+-Quitar la accion de importaci'on desde el m'odulo de xhtml2pdf==0.0.6 ese modulo parece que es esa versio no es compatible con python 3.*
+pero de todas maneras no es algo relevante ya que esa funcion de exportar a PDF aun no la realiza.

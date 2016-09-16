@@ -1,0 +1,255 @@
+El proyecto Academia tiene 2 App creadas por el autor y tiene instalado 10 módulos. La aplicación principal es Matrícula la cual es la que se encarga de manera general de gestionar toda la web en sí.
+
+En la configuración del programa se establece que el modelo de usuario del mismo no es el original de Django sino la clase Students definida en el modelo de Matricula. Dicha clase hereda del módulo simple_email_confirmations. Esa clase parece que lo único que le modifica a la original es la parte de los correos, sobrescribiendole esos métodos y agregandole algunas propiedades y métodos nuevos.
+
+Preguntar porque no está disponible al usuario la opción de añadirse a los grupos existentes.
+
+Academia Archivo Urls.py:
+
+La primera urls lo que hace es la vista index que es la raíz de la aplicación y después redirigir a las demás url que estan conformadas por cada archivo urls en cada app que consta la aplicación. En ella tambien incluyen las urls de algunos de lo módulos instalados las cuales hasta ahora no están implementadas.
+------------------------------------------------------------
+
+Matricula:
+
+Matricula Models.py:
+
+Analisis de los modelos de Matricula
+
+Modelo Student: Hereda del modulo del correo extendiendo sus funcionalidades además, es el modelo que se usa como User.
+
+Modelo Periodo: Todo normal campos= Name, fecha de inicio y fecha de terminación
+
+Modelo categoria: Todo normal campos= name y descripcion que es una herencia de un módulo pero todo ok
+
+Modelo Curso: Todo ok campos= categoria que es un foreingkey de categorias, name y descripcion, todo ok
+
+Modelo Grupo: Todo nomal
+
+Este Modelo tiene definida una función que permite saber en que estado se encuentra la pre-matrícula del estudiante.
+
+Modelo MenuTranslations:
+
+Un modelo que da la opción para cargar la configuracion en varios idiomas, es completamente legible su estructura
+
+Model page:
+
+Con un slug para la creación dinámica de páginas
+
+Modelo MultilingualContent:
+
+language = models.CharField(max_length=3,
+                                choices=settings.LANGUAGES,
+                                default=settings.LANGUAGE_CODE,
+                                verbose_name=_("Language"))
+    title = models.CharField(max_length=300, null=True, blank=True)
+    content = RichTextField(verbose_name=_("Content"))
+    page = models.ForeignKey(Page)
+
+Tiene un campo que parece que permite seleccionar el idioma en el que se escribira el contenido de la pagina nueva, ademas, tiene un foreingkey a Page
+
+
+Estos son todos los modelos que posee la App Matricula por lo que podemos sacar que:
+
+El modelo Grupo es el principal de todos, el Master de los demás. Los datos a ingresar en la BD empiezan con los grupos. 
+
+Para llegar a conformar un grupo tienes que tener un Periodo que es el que marca el tiempo que los cursos y los grupos van a estar activos. Cada grupo tendrá un tiempo de matrícula para que los estudiantes que existan se puedan matricular en él en caso de que ese curso tenga matrícula creada y disponible en ese momento. 
+
+Cada curso que se dará tendrá que tener al menos una categoría. Si existe un grupo creado y si en ese grupo el período está vigente el curso que pertenezca a ese período se listará como curso activo. 
+
+Cuando los cursos estén activo se mostrarán sus nombres con sus descripciones, si seleccionas cualquiera de ellos te darán su información y los grupos que hay.
+
+
+Urls del módulo matrículas:
+
+Las primeras 7 direcciones son dedicadas a la creación de los usuarios, tanto como el envio de correo de confirmaciones y los perfiles de dichos usuarios. Todas se encuentran definidas en el archivo Auth.py.
+
+Las 2 que le siguen define los cursos, tanto en la muestra de todos como la vista detallada de cada uno. Están definadas en el archivo Courses.py.
+
+Las otras 3 son dedicadas a las matriculas. Están definidas en el archivo Enrollments.py.
+
+La otra que queda es respecto a la creación de páginas. Esta definida en el archivo Pages.py.
+
+
+Views del módulo Matricula: 
+
+Archivo __init__.py:
+
+Este es el constructor del módulo de la aplicación el cual su única función es la de la raíz de la aplicación:
+
+Index:
+
+Realiza una consulta al modelo MenuItem filtrandolo por el campo is_index.
+
+Condiciona según el tipo de menú y va redirigiendo a distintas páginas según su tipo. Hasta ahora simplemente me redirecciona a la vista llamada "courses". No me funcionan bien las condicionales.
+
+Nota: Preguntar sobre el uso correcto de esta función ya que no logro crear nuevos menus
+
+
+Archivo Auth.py
+
+Este archivo de vista provee todas las vistas relacionadas con la creación, modificación y actualización de los usuarios de la aplicación web. Las funciones que posee son:
+
+create_user:
+
+Lo primero que hace esa función es crear una instancia del Formulario que crea los usuarios. Luego valida los datos enviados a través de POST y crea un nuevo Usuario. 
+
+Luego crea una variable mail_ body y le asigna el contenido del template email_confirmation que a su vez le pasa al template la variable url que tiene asignada una dirección única y además le pasa el objeto User a dicho template.
+
+Luego con la función send_email le envia desde el correo del Admin del sitio un correo a la dirección del usuario tiendo como contenido la variable mail_body. Si todo sale bien redirecciona a un template para informar que todo está ok.
+
+En resumen, esta función implementa un sistema de creación de usuario con sistema de confirmación de cuentas por correo.
+
+Nota: Esta función quizas pueda ser mejorada a través de las clases genéricas.
+
+
+confirm_email:
+
+Resive por get el número id y el key del usuario que está tratando de activar su cuenta.
+
+Después comprueba si ese id de usuario existe en la BD y en caso de que exista llama a la función confirm_email del módulo de los correos pasándole el key resivido, luego llama a la prpiedad is_confirmed de dicho módulo para si devuelve true mandarlo directamente al template message.html con el mensaje de success.
+
+En caso de que el id no exista en la BD redirecciona altemplate de message.html con el mensaje de Fail.
+
+Todas estas comprobaciones se hacen a través de dos bloques try para asegurarse de que no levante excepciones.
+
+Nota: Realmente esta función para mi no tiene manera de optimizarse, concuerdo 100%. 
+
+
+aunthenticate:
+
+Lo primero de esta función es que tiene un decorador ajax que es dado por el módulo django_ajax.
+
+Despues resive por POST los valores de username y password que vienen del formulario de logeo, luego comprueba que exista ese usuario y además que ese usuario esté activo y que su correo ya haya sido confirmado, en caso de que eso suceda redirecciona a la última página que el usuario intento entrar sin permiso.
+
+En caso de que no sea asi le pasa un diccionario por ajax al template con un mensaje de error. Ese diccionario el elemento a pasar se le antepone el símbolo de # más el id del div donde aparecerá en el template. Parece indicar que el template se reconoce porque a la hora de crear el formulario en el HTML se le coloca una directiva a la etiqueta form, además se crea un div donde el id tiene que coincidir con el pasado en el diccionario para que funcione todo ok.
+
+Nota: Todo ok con esta función de hecho no tenía idea de esta facilidad que brinda el módulo django_ajax.
+
+logout:
+
+Cierra la sección del usuario con el Django.
+
+login:
+
+Redirecciona a la página de logeo.
+
+Nota: Esta vista no creo que se utilice aun ya que no está enlazada a ninguna url.
+
+
+recover_password:
+
+Esta función lo que hace es cambiar la contraseña del usuario activo, recibiendo su id y su key para comprobar que es un usuario válido. En caso de que el usuario sea válido o no y los datos en el form sean correctos o no se llama a la función de Django de cambiar el password y se manda un mensaje de success o de error en dependencia al mismo template.
+
+En caso de que no exista usuario válido se levante una excepción 404.
+
+Nota: Esta función no pude llevarla bien a fondo ya que no puedo entrar en ella al no tener un usuario válido.
+
+
+mail_recover_pass:
+
+Esta función también trae el decorador de ajax.
+
+Lo primero que hace es resivir por post el correo dado por el usuario. Luego filtra en la BD de los usuarios para ver si ese correo coincide con alguno de los usuarios activos. Si coincide con alguno realiza el mismo procedimiento de enviar un correo al del usuario igual que en la función de crear los usuarios.
+
+En caso de que no coincida con ninguno da un mensaje de alerta en el template diciendo que no se encuentra el usuario.
+
+Todas estas acciones las realiza a través de ajax.
+
+Nota: Esta función a pesar de entenderla no puedo ejecutarla por lo del correo.
+
+
+get_profile:
+
+Esta función está definida en este archivo por formar parte del sistema de usuario pero sin embargo su url no está en módulo de Matricula.
+
+Lo único que hace es redireccionar a la otra url pasándole el usuario activo como parámetro.
+
+Nota: Actualmente no le veo mucho objetivo ya que al final llama a otra vista.
+
+StudentEdit:
+
+Esta es una vista basada en clases genéricas que hereda de UpdateView. Su función es modificar los datos del usuario activo.
+
+Lo primero que hace es decirle cual es el modelo a actualizar y cuales son los campos que permitirá modificarle. Luego cual será la url que redirecionará en caso de que todo esté ok.
+
+Después se le sobrescribe el método get_context_data que le permite pasarle al template contexto extra. 
+
+Dicho contexto se compone por una consulta a todas las matriculas que tiene el usuario tanto activas como ya prematriculadas. Esto permite mostrar a los usuarios en sus perfiles toda la información posible.
+
+Nota: Muy buena vista, ya había implementado cosas asi pero aprendí bien sobre el paso de contexto adicional al template ya que no lo tenía del todo claro.
+
+Esta es la última de las vistas de usuario.
+
+------------------------------------------------------
+
+Archivo Enrollments.py
+
+Este archivo se encarga de administrar la parte de las facturas de la aplicación web. Las funciones que contiene todas tienen el decorador de @login_required por lo tanto solo los usuarios logeados pueden entra y dichas funciones son las siguientes:
+
+enrollme:
+
+
+Lo primero de esta función es que tiene el decorador de ajax.
+
+Después comprueba si existen grupos sino levanta un error 404. Filtra para saber si el usuario activo pertenece o no a los grupos que existen.
+
+Después si no está en esta lista va comprobando el estado del campo flow para ir poniendo el estado de su matrícula según cada caso.
+
+Nota: Esa hasta donde yo entiendo es la intención de la vista, realmente considero que no está terminada aún o quizás no la entiendo.
+
+
+list_enroll:
+
+Lo primero que hace es hacer una consulta para ver si el usuario activo posee una matrícula que aún esté activa, que aún no la hayan cerrado y que no haya finalizado su tiempo de incripción.
+
+Luego hace otra consulta para ver si el usuario tiene alguna matrícula que ya se haya matriculado.
+
+Amobas consultas las manda al template enroll.html para lista ambos valores.
+
+Nota: En el template hay una etiqueta que no habia utilizado nunca a pesar de haber implementado su función de otras maneras.
+
+
+finish_enroll:
+
+Esta función lo que hace es simplemente matricular al estudiante.
+
+Lo primero que hace es comprobar que exista alguna matrícula disponible sino levanta un error 404. Luego le coloca a esa matrícula el campo de terminada la incripción y salva en la BD. Después redirecciona a la página que lista las matrículas disponibles. 
+
+Archivo Page.py.
+
+Este archivo se encarga de administrar las páginas que el usuario puede ir creando.
+
+PageDetails:
+
+
+
+Esta es una vista basada en clases genéricas que hereda de DetailView. 
+
+Lo primero que hace es decirle el modelo a modificar.
+
+Después se le sobrescribe el método get_context_data que le permite pasarle al template contexto extra. 
+
+Dicho contexto se compone por una consulta a todas los MultilingualContext que es lo que se le pasa al template page_detail.html que al final es lo que muestra.
+
+Nota: Algo raro lo de los context en este caso. Se entiende pero tengo que preguntar.
+
+Matricula: Bills
+
+Dentro de la app Matrícula se encuentra otra app llama Bills.
+
+Urls de Bills:
+
+Posee nada más que dos url. La primer se encarga de manejar las facturas de la aplicación. La segunda es una vista que provee el módulo de Paypal.
+
+Views de Bills:
+
+get_my_bills:
+
+Lo primero que hace es listar todas las facturas de ese usuario por orden de creación. Después filtra esa búsqueda a las facturas que se hayan pagado y después lo mismo pero a las que no se hayan pagado. Luego crea una tupla vacia.
+
+Realiza un ciclo recorriendo las facturas que no han sido pagada. Llama a una función que hace la conversión de dinero entre los distintas monedas y le va asignando a la tupla información necesaria para después pasarselo a la API de paypal y poder realizar el pago de las facturas de modo directo.
+
+Nota: por gusto con esa parte, no puedo abrir Paypal aunque comprendo todo lo realizado.
+
+La otra función es igual que esta, no la analizaré.
+
