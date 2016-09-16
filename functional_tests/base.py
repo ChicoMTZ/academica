@@ -1,74 +1,71 @@
 # encoding: utf-8
-from django.test import RequestFactory
 from matricula.models import Period, Category, Course, Student, Group
 from datetime import timedelta
 from django.utils import timezone as datetime
-from django.core.urlresolvers import resolve
-from matricula.views import index
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.contrib.auth import get_user_model
 from selenium.webdriver.firefox.webdriver import WebDriver
-from django.test import TestCase
-import time
-from django.utils.translation import ugettext_lazy as _
-
+import sys
+from django.test import Client
+from django.core.urlresolvers import reverse
 User = get_user_model()
-url_server = 'http://localhost:8000/'
 
 
-#En este archivo creo todas las funciones base de todos los test, los demas test heredaran todos de
-# este con el con el fin de obtener tambien sus metodos.
+class FunctionalTest(StaticLiveServerTestCase):
 
-class FunctionalTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        for arg in sys.argv:
+            if 'liveserver' in arg:
+                cls.server_url = 'http://' + arg.split('=')[1]
+                return
 
-    def setUp(self):
+        super(FunctionalTest, cls).setUpClass()
+        cls.server_url = cls.live_server_url
+        cls.selenium = WebDriver()
+        cls.selenium.maximize_window()
+        cls.selenium.implicitly_wait(5)
 
-        self.browser = WebDriver()
-        #Maximizo la ventana pork si no esta maximizada no se le presenta al usuario la opcion de logearse
-        self.browser.maximize_window()
-        self.browser.implicitly_wait(3)
-
-        self.factory = RequestFactory()
-        #Prueba la creacion de distintos objetos en la BD y los mantiene en todas las pruebas que haga
-        self.period_present = Period.objects.create(
+        cls.period_present = Period.objects.create(
                     name="Test present",
                     start_date=datetime.now(),
                     finish_date=datetime.now() + timedelta(days=1),
                     )
 
-        self.period_past = Period.objects.create(
+        cls.period_past = Period.objects.create(
                     name="Test past",
                     start_date=datetime.now() + timedelta(days=-360),
                     finish_date=datetime.now() + timedelta(days=-2),
                     )
-        self.period_future = Period.objects.create(
+        cls.period_future = Period.objects.create(
                     name="Test future",
                     start_date=datetime.now() + timedelta(days=1),
                     finish_date=datetime.now() + timedelta(days=2),
                     )
-        self.categorias = [
+        cls.categorias = [
                 Category.objects.create(name="Cat 1", description="Description 1"),
                 Category.objects.create(name="Cat 2", description="Description 2"),
-                Category.objects.create(name="Cat 3", description="Description 3") 
+                Category.objects.create(name="Cat 3", description="Description 3")
                           ]
 
-        self.courses = [
-            Course.objects.create(category=self.categorias[0],
+        cls.courses = [
+            Course.objects.create(category=cls.categorias[0],
                                    name="Course 1",
-                                   content=""),
-            Course.objects.create(category=self.categorias[1],
+                                   content="Contenido del Curso I"),
+            Course.objects.create(category=cls.categorias[1],
                                    name="Course 2",
-                                   content=""),
-            Course.objects.create(category=self.categorias[0],
+                                   content="Contenido del Curso II"),
+            Course.objects.create(category=cls.categorias[0],
                                    name="Course 3",
-                                   content=""),
-            Course.objects.create(category=self.categorias[2],
+                                   content="Contenido del Curso III"),
+            Course.objects.create(category=cls.categorias[2],
                                    name="Course 4",
-                                   content=""),
+                                   content="Contenido del Curso IV"),
                         ]
-        self.groups = [
+        cls.groups = [
             Group.objects.create(
-                        period=self.period_present,
-                        course=self.courses[0],
+                        period=cls.period_present,
+                        course=cls.courses[0],
                         name="G 01",
                         schedule="N/D",
                         pre_enroll_start=datetime.now(),
@@ -76,19 +73,21 @@ class FunctionalTest(TestCase):
                         enroll_start=datetime.now(),
                         enroll_finish=datetime.now() + timedelta(days=1),
                         cost=10.0, maximum=10),
+
             Group.objects.create(
-                        period=self.period_past,
-                        course=self.courses[0],
+                        period=cls.period_past,
+                        course=cls.courses[0],
                         name="G 02",
                         schedule="N/D",
                         pre_enroll_start=datetime.now(),
                         pre_enroll_finish=datetime.now() + timedelta(days=1),
                         enroll_start=datetime.now(),
                         enroll_finish=datetime.now() + timedelta(days=1),
+
                         cost=10.0, maximum=10),
             Group.objects.create(
-                        period=self.period_present,
-                        course=self.courses[1],
+                        period=cls.period_present,
+                        course=cls.courses[1],
                         name="G 03",
                         schedule="N/D",
                         pre_enroll_start=datetime.now() + timedelta(days=-2),
@@ -99,10 +98,10 @@ class FunctionalTest(TestCase):
 
                        ]
 
-        self.users = [
-                      Student.objects.create_user(username='jacob',
+        cls.users = [
+                      Student.objects.create_user(username='Admin',
                                                   email='jacob@…',
-                                                  password='password'),
+                                                  password='chicomtz'),
                       Student.objects.create_user(username='jacob1',
                                                   email='jacob1@…',
                                                   password='password'),
@@ -114,63 +113,52 @@ class FunctionalTest(TestCase):
                                                  password='password'),
                       ]
 
-        self.assertTrue(self.client.get('matricula/course'))
-
-    #Funcion que crea un usuario
+    @classmethod
+    def tearDownClass(cls):
+        cls.selenium.quit()
+        super(FunctionalTest, cls).tearDownClass()
 
     def create_user_without_permision(self, **credentials):
         user = User.objects.create_user(**credentials)
 
-
-
-    #Funcion que logea un usuario
-
     def login_user_without_permision(self, username, password):
-        self.browser.get(url_server)
+        self.selenium.get('http://localhost:8000/')
 
         btn_signin = self.get_signin_button()
         self.assertTrue(btn_signin.is_displayed())
         btn_signin.click()
-        input_user = self.browser.find_element_by_name('username')
+        input_user = self.selenium.find_element_by_name('username')
         input_user.send_keys(username)
-        input_pass = self.browser.find_element_by_name('password')
+        input_pass = self.selenium.find_element_by_name('password')
         input_pass.send_keys(password)
-        btn_login = self.browser.find_element_by_name('Login')
+        btn_login = self.selenium.find_element_by_name('Login')
         btn_login.click()
 
     def anonymus_can_nav(self):
-
-        self.browser.get(url_server)
-        menu_list = self.browser.find_element_by_id('menu')
+        self.selenium.get('%s' % self.server_url)
+        menu_list = self.selenium.find_element_by_id('menu')
         self.assertTrue(menu_list)
-        self.browser.find_element_by_css_selector('ul li a')
-        table = self.browser.find_element_by_class_name('table')
+        self.selenium.find_element_by_css_selector('ul li a')
+        table = self.selenium.find_element_by_class_name('table')
         rows = table.find_elements_by_tag_name('tr')
         self.assertTrue(
             any('Groups' in row.text for row in rows)
         )
-        self.browser.find_element_by_name('Curso').click()
-        self.browser.find_element_by_class_name('navbar-brand').click()
-        self.browser.find_element_by_name('Read').click()
+        self.selenium.find_element_by_name('Curso').click()
+        self.selenium.find_element_by_class_name('navbar-brand').click()
+        self.selenium.find_element_by_name('Read').click()
 
     def user_can_nav(self):
-        self.login_user_without_permision('operator',123)
-        testo = self.browser.find_elements_by_name('List')
-        for te in testo:
-            print(te.text)
+        self.login_user_without_permision('Admin', 'chicomtz')
+        table = self.selenium.find_element_by_id('menu')
+        testo = table.find_elements_by_tag_name('li')
 
-
-
-
-    #Funcion que obtiene el boton de login
+        self.assertTrue(
+            any('Cursos' in row.text for row in testo)
+        )
 
     def get_signin_button(self):
-        return self.browser.find_element_by_name('Sign in')
-
-    #Funcion que obtiene el boton de sign up
+        return self.selenium.find_element_by_name('Sign in')
 
     def get_sigup_button(self):
-        return self.browser.find_element_by_name('Sign up')
-
-    def tearDown(self):
-        self.browser.quit()
+        return self.selenium.find_element_by_name('Sign up')
